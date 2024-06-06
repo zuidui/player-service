@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  user-service:
+  team-service:
     container_name: ${IMAGE_NAME}
     image: ${IMAGE_NAME}:${IMAGE_VERSION}
     build:

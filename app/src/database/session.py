@@ -52,16 +52,26 @@ class DatabaseSession:
     @asynccontextmanager
     async def get_db(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.SessionLocal() as db:
-            yield db
+            try:
+                yield db
+                await db.commit()
+            except Exception as e:
+                await db.rollback()
+                log.error(f"Session rollback: {e}")
+                raise e
+            finally:
+                await db.close()
 
     @asynccontextmanager
     async def commit_rollback(self, session: AsyncSession):
         try:
-            yield
+            yield session
             await session.commit()
         except Exception as e:
             await session.rollback()
             raise e
+        finally:
+            await session.close()
 
 
 db = DatabaseSession()

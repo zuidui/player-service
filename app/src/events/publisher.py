@@ -2,12 +2,20 @@ import pika  # type: ignore
 import json
 import threading
 from queue import Queue
+from datetime import datetime
 
 from utils.logger import logger_config
 from utils.config import get_settings
 
 log = logger_config(__name__)
 settings = get_settings()
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return json.JSONEncoder.default(self, obj)
 
 
 class Publisher:
@@ -55,3 +63,8 @@ class Publisher:
 
 def start_publisher():
     return Publisher()
+
+
+async def publish_event(publisher: Publisher, event_type: str, data: dict):
+    publisher.publish({"event_type": event_type, "data": data})
+    return True

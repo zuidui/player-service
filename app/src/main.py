@@ -2,18 +2,18 @@ import uvicorn
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from database.sample import insert_sample_data
+from database.sample import insert_sample_teams, insert_sample_players
 from database.session import db
 
 from events.consumer import start_consumer
 from events.publisher import start_publisher
 
-from routes.graphql import graphql_router
-from routes.consumer import consumer_router
-from routes.health import health_router
+from routes.graphql_router import graphql_router
+from routes.consumer_router import consumer_router
+from routes.health_router import health_router
 
 from utils.logger import logger_config
 from utils.config import get_settings
@@ -25,17 +25,24 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # As many consumers as needed can be started here and need to be closed when the app is closed
-    consumer = start_consumer("match-events")
+    consumer = start_consumer("team-events")
     publisher = start_publisher()
     try:
         await db.create_database()
         async with db.get_db() as session:
-            await insert_sample_data(session)
+            await insert_sample_teams(session)
+            await insert_sample_players(session)
+        app.state.consumer = consumer
+        app.state.publisher = publisher
         yield
     finally:
         consumer.close()
         publisher.close()
         await db.close_database()
+
+
+async def get_context(request: Request):
+    return {"publisher": request.app.state.publisher}
 
 
 def init_app():
@@ -50,6 +57,7 @@ def init_app():
     log.info(f"API prefix: {settings.API_PREFIX}")
     log.info(f"Documentation URL: {settings.DOC_URL}")
     log.info(f"Database URI: {settings.SQLALCHEMY_DATABASE_URI}")
+    log.info(f"API Gateway URL: {settings.API_GATEWAY_URL}")
 
     app = FastAPI(
         title=settings.IMAGE_NAME,
@@ -62,14 +70,16 @@ def init_app():
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:8081"],
+        # Need to check how to allow only the API Gateway URL and the Database URI
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
+    app.router.lifespan_context = lifespan
     app.include_router(health_router)
-    app.include_router(graphql_router(), prefix=settings.API_PREFIX)
+    app.include_router(graphql_router(get_context), prefix=settings.API_PREFIX)
     app.include_router(consumer_router, prefix=settings.API_PREFIX)
 
     log.info("Application created successfully")
