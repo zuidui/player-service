@@ -1,6 +1,9 @@
 import pika  # type: ignore
 import json
 import threading
+import asyncio
+
+from service.team_service import TeamService
 
 from utils.logger import logger_config
 from utils.config import get_settings
@@ -34,6 +37,11 @@ class Consumer:
     def callback(self, ch, method, properties, body):
         message = json.loads(body)
         log.info(f"Received message: {message}")
+        asyncio.run(self.process_message(message))
+
+    async def process_message(self, message):
+        log.info(f"Processing message: {message}")
+        await TeamService.handle_message(message)
 
 
 def start_consumer(queue_name=settings.QUEUE_NAME):

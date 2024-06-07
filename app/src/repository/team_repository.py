@@ -15,7 +15,7 @@ class TeamRepository:
                 session.add(team_data)
                 await session.flush()
                 await session.refresh(team_data)
-                log.info(f"Team created in DB: {team_data.to_dict()}")
+                log.info(f"Team created in repository: {team_data.to_dict()}")
         return team_data
 
     @staticmethod
@@ -24,4 +24,7 @@ class TeamRepository:
             stmt = sql_select(Team).where(Team.team_name == team_name)
             result = await session.execute(stmt)
             team = result.scalars().first()
+            if team:
+                await session.refresh(team)
+                log.info(f"Team found in repository: {team.to_dict()}")
         return team

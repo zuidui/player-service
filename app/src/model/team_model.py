@@ -9,7 +9,7 @@ class Team(Base):
     __tablename__ = "teams"
 
     team_id = Column(Integer, primary_key=True, index=True)
-    team_name = Column(String, index=True)
+    team_name = Column(String, index=True, unique=True)
     team_password = Column(String)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

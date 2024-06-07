@@ -27,6 +27,7 @@ class DatabaseSession:
             autoflush=False,
             bind=self.engine,
             class_=AsyncSession,
+            expire_on_commit=False,
         )
 
         self.metadata = Base.metadata
@@ -57,7 +58,6 @@ class DatabaseSession:
                 await db.commit()
             except Exception as e:
                 await db.rollback()
-                log.error(f"Session rollback: {e}")
                 raise e
             finally:
                 await db.close()
