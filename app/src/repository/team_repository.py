@@ -28,3 +28,11 @@ class TeamRepository:
                 await session.refresh(team)
                 log.info(f"Team found in repository: {team.to_dict()}")
         return team
+
+    @staticmethod
+    async def team_exists_by_name(team_name: str) -> bool:
+        async with db.get_db() as session:
+            stmt = sql_select(Team).where(Team.team_name == team_name)
+            result = await session.execute(stmt)
+            team = result.scalars().first()
+            return team is not None

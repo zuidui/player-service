@@ -11,16 +11,19 @@ services:
         - APP_PORT=${APP_PORT}
         - APP_HOST=${APP_HOST}
         - APP_MODULE=${APP_MODULE}
+        - DEBUG_PORT=${DEBUG_PORT}
     volumes:
       - ./src:/app/src
     ports:
       - ${APP_PORT}:${APP_PORT}
+      - ${DEBUG_PORT}:${DEBUG_PORT}
     env_file:
       - .env
     environment:
       - APP_PORT=${APP_PORT}
       - APP_HOST=${APP_HOST}
       - APP_MODULE=${APP_MODULE}
+      - DEBUG_PORT=${DEBUG_PORT}
       - PYTHONPATH=/app/src
     depends_on:
       - db

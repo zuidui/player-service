@@ -1,4 +1,5 @@
 import uvicorn
+import debugpy  # type: ignore
 
 from contextlib import asynccontextmanager
 
@@ -20,6 +21,13 @@ from utils.config import get_settings
 
 log = logger_config(__name__)
 settings = get_settings()
+
+
+def start_debug_server():
+    log.info("Starting debug server...")
+    debugpy.listen((settings.APP_HOST, settings.DEBUG_PORT))
+    log.info("Debug server started")
+    debugpy.wait_for_client()
 
 
 @asynccontextmanager
@@ -83,6 +91,9 @@ def init_app():
     app.include_router(consumer_router, prefix=settings.API_PREFIX)
 
     log.info("Application created successfully")
+
+    if settings.DEBUG:
+        start_debug_server()
 
     return app
 

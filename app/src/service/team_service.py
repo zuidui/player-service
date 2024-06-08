@@ -3,23 +3,16 @@ import httpx
 
 from datetime import datetime, timezone
 
-from model.player_model import Player
 from model.team_model import Team
 
-from resolver.player_schema import PlayerType, PlayerInput
-from resolver.team_schema import TeamType, TeamInput
+from resolver.team_schema import TeamCreateRequest, TeamCreateResponse
 
 from repository.team_repository import TeamRepository
-from repository.player_repository import PlayerRepository
 
 from events.publisher import publish_event, Publisher
 
 from utils.logger import logger_config
 from utils.config import get_settings
-from utils.converters import (
-    convert_player_to_playertype,
-    convert_team_to_teamtype,
-)
 
 log = logger_config(__name__)
 settings = get_settings()
@@ -31,25 +24,22 @@ class TeamService:
         log.info(f"Handling message: {message}")
         event_type = message["event_type"]
         data = message["data"]
-        if event_type == "createTeam":
+        if event_type == "create_team":
+            team_name = data["team_name"]
+            team_id = data["team_id"]
             mutation = f"""
             mutation {{
-                createTeam(teamId: "{data['teamId']}", teamName: "{data['teamName']}") {{
-                    teamId
-                    teamName
-                }}
-            }}
-            """
-        elif event_type == "createPlayer":
-            mutation = f"""
-            mutation {{
-                createPlayer(playerId: "{data['playerId']}", playerName: "{data['playerName']}") {{
-                    playerId
-                    playerName
+                create_team(new_team: {{ 
+                    team_name: "{team_name}"
+                    team_id: "{team_id}"
+                }}) {{
+                    team_id
+                    team_name
                 }}
             }}
             """
         payload = {"query": mutation}
+        log.debug(f"Sending GraphQL mutation: {payload['query']}")
         return await TeamService.send_to_api_gateway(payload)
 
     @staticmethod
@@ -76,58 +66,39 @@ class TeamService:
         return None
 
     @staticmethod
-    async def create_team(team_data: TeamInput, publisher: Publisher) -> TeamType:
+    async def create_team(
+        team_data: TeamCreateRequest, publisher: Publisher
+    ) -> TeamCreateResponse:
         log.info(f"Creating team: {team_data}")
 
+        if await TeamService.team_exists_by_name(team_data.team_name):
+            raise ValueError(f"Team with name {team_data.team_name} already exists")
+
         new_team = Team(
-            team_name=team_data.teamName,
-            team_password=team_data.teamPassword,
+            team_name=team_data.team_name,
+            team_password=team_data.team_password,
             created_at=datetime.now(timezone.utc),
         )
 
-        team_created = convert_team_to_teamtype(await TeamRepository.create(new_team))
+        team = (await TeamRepository.create(new_team)).to_dict()
 
-        log.info(f"Team created in service: {team_created.__dict__}")
+        team_created = TeamCreateResponse(
+            team_id=team["team_id"],
+            team_name=team["team_name"],
+        )
 
-        await publish_event(publisher, "createTeam", team_created.__dict__)
+        log.info(f"Team created in service: {team_created}")
+        log.debug(
+            f"Publishing event: create_team with data: {{'team_id': {team_created.team_id}, 'team_name': {team_created.team_name}}}"
+        )
+        await publish_event(
+            publisher,
+            "create_team",
+            {"team_id": team_created.team_id, "team_name": team_created.team_name},
+        )
 
         return team_created
 
     @staticmethod
-    async def get_team_by_name(team_name: str) -> TeamType:
-        log.info(f"Getting team by name: {team_name}")
-
-        team = await TeamRepository.get_by_name(team_name)
-
-        log.info(f"Team found: {team}")
-
-        return convert_team_to_teamtype(team)
-
-    @staticmethod
-    async def create_player(
-        player_data: PlayerInput, publisher: Publisher
-    ) -> PlayerType:
-        log.info(f"Creating player: {player_data}")
-
-        player = Player(
-            team_id=player_data.teamId,
-            player_name=player_data.playerName,
-            created_at=datetime.now(timezone.utc),
-        )
-
-        player_created = await PlayerRepository.create(player)
-        log.info(f"Player created: {player_created.to_dict()}")
-
-        await publish_event(publisher, "createPlayer", player_created.to_dict())
-
-        return convert_player_to_playertype(player_created)
-
-    @staticmethod
-    async def get_player_by_name(player_name: str) -> PlayerType:
-        log.info(f"Getting player by name: {player_name}")
-
-        player = await PlayerRepository.get_by_name(player_name)
-
-        log.info(f"Player found: {player}")
-
-        return convert_player_to_playertype(player)
+    async def team_exists_by_name(team_name: str) -> bool:
+        return await TeamRepository.team_exists_by_name(team_name)

@@ -2,14 +2,12 @@ import strawberry
 
 
 @strawberry.type
-class TeamType:
-    teamId: int
-    teamName: str
-    teamPassword: str
-    createdAt: str
+class TeamCreateResponse:
+    team_id: int = strawberry.field(name="team_id")
+    team_name: str = strawberry.field(name="team_name")
 
 
 @strawberry.input
-class TeamInput:
-    teamName: str
-    teamPassword: str
+class TeamCreateRequest:
+    team_name: str = strawberry.field(name="team_name")
+    team_password: str = strawberry.field(name="team_password")

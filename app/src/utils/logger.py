@@ -26,7 +26,7 @@ def logger_config(module: str) -> logging.Logger:
     usage: logger_config(__name__)
     """
     formatter = CustomFormatter(
-        "%(asctime)s [%(levelname)s] [%(className)s.%(funcName)s] [%(message)s]"
+        "%(asctime)s[%(levelname)s][%(module)s.%(funcName)s][%(message)s]"
     )
 
     handler = logging.StreamHandler()
@@ -67,6 +67,6 @@ if not root_logger.hasHandlers():
 for handler in root_logger.handlers:
     handler.setFormatter(
         CustomFormatter(
-            "%(asctime)s [%(levelname)s] [%(className)s.%(funcName)s] [%(message)s]"
+            "%(asctime)s[%(levelname)s][%(module)s.%(funcName)s][%(message)s]"
         )
     )
