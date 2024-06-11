@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: team-service",
+            "name": "team-service-debug",
             "type": "debugpy",
             "request": "attach",
             "connect": {
@@ -11,9 +11,10 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "/app/src"
-                }]
+                    "localRoot": "${workspaceFolder}/app/src",
+                    "remoteRoot": "/workspace/app/src"
+                }
+            ]
         }
     ]
 }

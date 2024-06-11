@@ -4,6 +4,7 @@ services:
   team-service:
     container_name: ${IMAGE_NAME}
     image: ${IMAGE_NAME}:${IMAGE_VERSION}
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,7 +14,10 @@ services:
         - APP_MODULE=${APP_MODULE}
         - DEBUG_PORT=${DEBUG_PORT}
     volumes:
-      - ./src:/app/src
+      - ../app:/workspace/app
+      - ../.devcontainer:/workspace/.devcontainer
+      - ../.vscode:/workspace/.vscode
+    working_dir: /workspace/app/src
     ports:
       - ${APP_PORT}:${APP_PORT}
       - ${DEBUG_PORT}:${DEBUG_PORT}
@@ -24,7 +28,6 @@ services:
       - APP_HOST=${APP_HOST}
       - APP_MODULE=${APP_MODULE}
       - DEBUG_PORT=${DEBUG_PORT}
-      - PYTHONPATH=/app/src
     depends_on:
       - db
     networks:

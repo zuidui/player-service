@@ -2,24 +2,31 @@
     "name": "Team Service Dev Container",
     "dockerComposeFile": "../app/docker-compose.yml",
     "service": "team-service",
-    "workspaceFolder": "/app/src",
+    "workspaceFolder": "/workspace",
     "customizations": {
-        "vscode": {
-            "settings": {
-                "terminal.integrated.shell.linux": "/bin/bash",
-                "python.pythonPath": "/usr/local/bin/python",
-                "extensions": [
-                    "ms-python.python",
-                    "ms-azuretools.vscode-docker",
-                    "ms-python.vscode-pylance",
-                    "visualstudioexptteam.vscodeintellicode"
-                ]
-            }
-        }
-    },
-    "runServices": ["team-service"],
-    "shutdownAction": "stopCompose",
-    "mounts": [
-        "source=${localWorkspaceFolder}/.vscode/launch.json,target=/app/src/.vscode/launch.json,type=bind,consistency=cached"
-    ]
+      "vscode": {
+          "settings": {
+              "terminal.integrated.shell.linux": "/bin/bash",
+              "python.pythonPath": "/usr/local/bin/python"
+          },
+          "extensions": [
+              "ms-python.python",
+              "ms-azuretools.vscode-docker",
+              "ms-python.vscode-pylance",
+              "visualstudioexptteam.vscodeintellicode"
+          ]
+      }
+  },
+  "runServices": ["team-service"],
+  "shutdownAction": "stopCompose",
+  "remoteEnv": {
+      "APP_PORT": "8082",
+      "DEBUG_PORT": "5679"
+  },
+  "mounts": [
+      "source=${localWorkspaceFolder}/app,target=/workspace/app,type=bind,consistency=cached",
+      "source=${localWorkspaceFolder}/.devcontainer,target=/workspace/.devcontainer,type=bind,consistency=cached",
+      "source=${localWorkspaceFolder}/.vscode,target=/workspace/.vscode,type=bind,consistency=cached"
+  ],    
+  "forwardPorts": [8082, 5679]
 }

@@ -6,6 +6,10 @@ from sqlalchemy.future import select
 from model.team_model import Team
 from model.player_model import Player
 
+from utils.logger import logger_config
+
+log = logger_config(__name__)
+
 
 async def insert_sample_data(session: AsyncSession, model, sample_data):
     result = await session.execute(select(model))

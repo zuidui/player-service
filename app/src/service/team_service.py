@@ -20,8 +20,7 @@ settings = get_settings()
 
 class TeamService:
     @staticmethod
-    async def handle_message(message: dict):
-        log.info(f"Handling message: {message}")
+    async def handle_message(message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         event_type = message["event_type"]
         data = message["data"]
         if event_type == "create_team":
@@ -29,7 +28,7 @@ class TeamService:
             team_id = data["team_id"]
             mutation = f"""
             mutation {{
-                create_team(new_team: {{ 
+                team_created(new_team: {{ 
                     team_name: "{team_name}"
                     team_id: "{team_id}"
                 }}) {{
@@ -38,9 +37,12 @@ class TeamService:
                 }}
             }}
             """
-        payload = {"query": mutation}
-        log.debug(f"Sending GraphQL mutation: {payload['query']}")
-        return await TeamService.send_to_api_gateway(payload)
+            payload = {"query": mutation}
+            log.debug(f"Sending GraphQL mutation: {payload['query']}")
+            return await TeamService.send_to_api_gateway(payload)
+        else:
+            log.warning(f"Event type {event_type} not supported")
+            return None
 
     @staticmethod
     async def send_to_api_gateway(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -80,24 +82,25 @@ class TeamService:
             created_at=datetime.now(timezone.utc),
         )
 
-        team = (await TeamRepository.create(new_team)).to_dict()
+        try:
+            team = (await TeamRepository.create(new_team)).to_dict()
+            team_created = TeamCreateResponse(
+                team_id=team["team_id"],
+                team_name=team["team_name"],
+            )
 
-        team_created = TeamCreateResponse(
-            team_id=team["team_id"],
-            team_name=team["team_name"],
-        )
-
-        log.info(f"Team created in service: {team_created}")
-        log.debug(
-            f"Publishing event: create_team with data: {{'team_id': {team_created.team_id}, 'team_name': {team_created.team_name}}}"
-        )
-        await publish_event(
-            publisher,
-            "create_team",
-            {"team_id": team_created.team_id, "team_name": team_created.team_name},
-        )
-
-        return team_created
+            log.info(
+                f"Publishing event: create_team with data: {{'team_id': {team_created.team_id}, 'team_name': {team_created.team_name}}}"
+            )
+            await publish_event(
+                publisher,
+                "create_team",
+                {"team_id": team_created.team_id, "team_name": team_created.team_name},
+            )
+            return team_created
+        except Exception as e:
+            log.error(f"Error creating team: {e}")
+            raise e
 
     @staticmethod
     async def team_exists_by_name(team_name: str) -> bool:

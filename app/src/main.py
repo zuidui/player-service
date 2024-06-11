@@ -1,5 +1,4 @@
 import uvicorn
-import debugpy  # type: ignore
 
 from contextlib import asynccontextmanager
 
@@ -23,18 +22,11 @@ log = logger_config(__name__)
 settings = get_settings()
 
 
-def start_debug_server():
-    log.info("Starting debug server...")
-    debugpy.listen((settings.APP_HOST, settings.DEBUG_PORT))
-    log.info("Debug server started")
-    debugpy.wait_for_client()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # As many consumers as needed can be started here and need to be closed when the app is closed
-    consumer = start_consumer("team-events")
-    publisher = start_publisher()
+    consumer = start_consumer(settings.QUEUE_NAME)
+    publisher = start_publisher(settings.QUEUE_NAME)
     try:
         await db.create_database()
         async with db.get_db() as session:
@@ -56,14 +48,14 @@ async def get_context(request: Request):
 def init_app():
     log.info("Creating application...")
     log.info(f"Image: {settings.IMAGE_NAME}:{settings.IMAGE_VERSION}")
-    log.info(f"Author: {settings.AUTHOR}")
-    log.info(f"License: {settings.LICENSE}")
+    log.info(f"Author: {settings.DOCKERHUB_USERNAME}")
+    log.info(f"Debug mode: {settings.DEBUG}")
+    log.info(f"Debug port: {settings.DEBUG_PORT}")
     log.info(f"Application module: {settings.APP_MODULE}")
     log.info(f"Application port: {settings.APP_PORT}")
     log.info(f"Application host: {settings.APP_HOST}")
     log.info(f"Application description: {settings.APP_DESCRIPTION}")
     log.info(f"API prefix: {settings.API_PREFIX}")
-    log.info(f"Documentation URL: {settings.DOC_URL}")
     log.info(f"Database URI: {settings.SQLALCHEMY_DATABASE_URI}")
     log.info(f"API Gateway URL: {settings.API_GATEWAY_URL}")
 
@@ -92,15 +84,10 @@ def init_app():
 
     log.info("Application created successfully")
 
-    if settings.DEBUG:
-        start_debug_server()
-
     return app
 
 
 app = init_app()
 
 if __name__ == "__main__":
-    log.info("Starting application...")
-    uvicorn.run(app, host=settings.APP_HOST, port=settings.APP_PORT)
-    log.info("Application started")
+    uvicorn.run(app, host=settings.APP_HOST, port=settings.APP_PORT, reload=True)

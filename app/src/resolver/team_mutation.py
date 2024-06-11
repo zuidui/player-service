@@ -20,5 +20,5 @@ class TeamMutation:
         new_team: Annotated[TeamCreateRequest, strawberry.argument(name="new_team")],
     ) -> Optional[TeamCreateResponse]:
         publisher = info.context["publisher"]
-        log.info(f"Creating a new team: {new_team}")
+        log.info(f"Creating team with data: {new_team}")
         return await TeamService.create_team(new_team, publisher)
