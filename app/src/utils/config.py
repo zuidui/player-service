@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     DEPENDENCIES: str
     DB_HOST: str
     DB_PORT: int
+    DB_HOST_PORT: str
     DB_USER: str
     DB_PASSWORD: str
     DB_NAME: str

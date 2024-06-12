@@ -2,7 +2,7 @@ import strawberry
 from strawberry.types import Info
 from typing import Annotated, Optional
 
-from resolver.team_schema import TeamCreateRequest, TeamCreateResponse
+from resolver.team_schema import TeamCreateType, TeamCreateInput
 
 from service.team_service import TeamService
 
@@ -17,8 +17,8 @@ class TeamMutation:
     async def create_team(
         self,
         info: Info,
-        new_team: Annotated[TeamCreateRequest, strawberry.argument(name="new_team")],
-    ) -> Optional[TeamCreateResponse]:
+        new_team: Annotated[TeamCreateInput, strawberry.argument(name="new_team")],
+    ) -> Optional[TeamCreateType]:
         publisher = info.context["publisher"]
         log.info(f"Creating team with data: {new_team}")
         return await TeamService.create_team(new_team, publisher)

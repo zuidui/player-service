@@ -5,14 +5,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from database.sample import insert_sample_teams, insert_sample_players
-from database.session import db
+from data.sample import insert_sample_teams, insert_sample_players
+from data.session import db
 
 from events.consumer import start_consumer
 from events.publisher import start_publisher
 
 from routes.graphql_router import graphql_router
-from routes.consumer_router import consumer_router
 from routes.health_router import health_router
 
 from utils.logger import logger_config
@@ -80,7 +79,6 @@ def init_app():
     app.router.lifespan_context = lifespan
     app.include_router(health_router)
     app.include_router(graphql_router(get_context), prefix=settings.API_PREFIX)
-    app.include_router(consumer_router, prefix=settings.API_PREFIX)
 
     log.info("Application created successfully")
 

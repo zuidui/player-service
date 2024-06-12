@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
-from database.session import Base
+from data.session import Base
 
 
 class Team(Base):

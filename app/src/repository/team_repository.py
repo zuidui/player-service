@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.future import select as sql_select
 from model.team_model import Team
-from database.session import db
+from data.session import db
 from utils.logger import logger_config
 
 log = logger_config(__name__)
