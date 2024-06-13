@@ -151,7 +151,7 @@ class TeamService:
             player = (await PlayerRepository.create(new_player)).to_dict()
             player_created = PlayerCreateType(
                 player_id=player["player_id"],
-                player_team_id=player["player_team_id"],
+                player_team_id=player["team_id"],
                 player_name=player["player_name"],
             )
 
