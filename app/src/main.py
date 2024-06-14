@@ -1,4 +1,5 @@
 import uvicorn
+import asyncio
 
 from contextlib import asynccontextmanager
 
@@ -23,24 +24,25 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    consumer = start_consumer(settings.QUEUE_NAME)
-    publisher = start_publisher(settings.QUEUE_NAME)
+    loop = asyncio.get_event_loop()
+    consumer_connection = await start_consumer(loop)
+    publisher_connection = await start_publisher(loop)
     try:
         await db.create_database()
         async with db.get_db() as session:
             await insert_sample_teams(session)
             await insert_sample_players(session)
-        app.state.consumer = consumer
-        app.state.publisher = publisher
+        app.state.consumer_connection = consumer_connection
+        app.state.publisher_connection = publisher_connection
         yield
     finally:
-        consumer.close()
-        publisher.close()
+        await consumer_connection.close()
+        await publisher_connection.close()
         await db.close_database()
 
 
-async def get_context(request: Request):
-    return {"publisher": request.app.state.publisher}
+async def get_context(request: Request) -> dict:
+    return {"publisher": request.app.state.publisher_connection}
 
 
 def init_app():
@@ -54,8 +56,16 @@ def init_app():
     log.info(f"Application host: {settings.APP_HOST}")
     log.info(f"Application description: {settings.APP_DESCRIPTION}")
     log.info(f"API prefix: {settings.API_PREFIX}")
-    log.info(f"Database URI: {settings.SQLALCHEMY_DATABASE_URI}")
+    log.info(
+        f"Service API: http://{settings.IMAGE_NAME}:{settings.APP_PORT}{settings.API_PREFIX}/graphql"
+    )
+    log.info(
+        f"Service health-check: http://{settings.IMAGE_NAME}:{settings.APP_PORT}/health"
+    )
+    log.info(f"Service schema: http://{settings.IMAGE_NAME}:{settings.APP_PORT}/schema")
+    log.info(f"Database URL: {settings.SQLALCHEMY_DATABASE_URI}")
     log.info(f"API Gateway URL: {settings.API_GATEWAY_URL}")
+    log.info(f"Broker: {settings.BROKER_URL}/{settings.QUEUE_NAME}")
 
     app = FastAPI(
         title=settings.IMAGE_NAME,
@@ -66,7 +76,7 @@ def init_app():
         lifespan=lifespan,
     )
 
-    origins = ['*']
+    origins = ["*"]
 
     app.add_middleware(
         CORSMiddleware,

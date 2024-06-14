@@ -23,44 +23,6 @@ settings = get_settings()
 
 class TeamService:
     @staticmethod
-    async def handle_message(message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        event_type = message["event_type"]
-        data = message["data"]
-        if event_type == "create_team":
-            team_name = data["team_name"]
-            team_id = data["team_id"]
-            mutation = f"""
-            mutation {{
-                team_created(new_team: {{ 
-                    team_name: "{team_name}"
-                    team_id: "{team_id}"
-                }}) {{
-                    team_id
-                    team_name
-                }}
-            }}
-            """
-            payload = {"query": mutation}
-        elif event_type == "create_player":
-            player_name = data["player_name"]
-            player_team_id = data["player_team_id"]
-            mutation = f"""
-            mutation {{
-                player_created(new_player: {{ 
-                    player_name: "{player_name}"
-                    player_team_id: "{player_team_id}"
-                }}) {{
-                    player_name
-                    player_team_name
-                    player_team_id
-                }}
-            }}
-            """
-            payload = {"query": mutation}
-        log.debug(f"Sending GraphQL mutation: {payload['query']}")
-        return await TeamService.send_to_api_gateway(payload)
-
-    @staticmethod
     async def send_to_api_gateway(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         try:
             log.debug(
@@ -82,6 +44,44 @@ class TeamService:
         except Exception as e:
             log.error(f"Unexpected error: {e}")
         return None
+
+    @staticmethod
+    async def handle_message(message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        event_type = message["event_type"]
+        data = message["data"]
+        if event_type == "create_team":
+            team_name = data["team_name"]
+            team_id = data["team_id"]
+            mutation = f"""
+            mutation {{
+                team_created(new_team: {{ 
+                    team_name: "{team_name}"
+                    team_id: {team_id}
+                }}) {{
+                    team_id
+                    team_name
+                }}
+            }}
+            """
+            payload = {"query": mutation}
+        elif event_type == "create_player":
+            player_name = data["player_name"]
+            player_team_id = data["player_team_id"]
+            mutation = f"""
+            mutation {{
+                player_created(new_player: {{ 
+                    player_name: "{player_name}"
+                    player_team_id: {player_team_id}
+                }}) {{
+                    player_name
+                    player_team_name
+                    player_team_id
+                }}
+            }}
+            """
+            payload = {"query": mutation}
+        log.debug(f"Sending GraphQL mutation: {payload['query']}")
+        return await TeamService.send_to_api_gateway(payload)
 
     @staticmethod
     async def team_exists_by_name(team_name: str) -> bool:
@@ -115,9 +115,6 @@ class TeamService:
                 team_name=team["team_name"],
             )
 
-            log.info(
-                f"Publishing event: create_team with data: {{'team_id': {team_created.team_id}, 'team_name': {team_created.team_name}}}"
-            )
             await publish_event(
                 publisher,
                 "create_team",
@@ -155,9 +152,6 @@ class TeamService:
                 player_name=player["player_name"],
             )
 
-            log.info(
-                f"Publishing event: create_player with data: {{'player_id': {player_created.player_id}, 'player_team_id': {player_created.player_team_id}, 'player_name': {player_created.player_name}}}"
-            )
             await publish_event(
                 publisher,
                 "create_player",

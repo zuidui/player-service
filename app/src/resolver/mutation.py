@@ -23,7 +23,7 @@ class Mutation:
         publisher = info.context["publisher"]
         log.info(f"Creating team with data: {new_team}")
         return await TeamService.create_team(new_team, publisher)
-    
+
     @strawberry.mutation(name="create_player")
     async def create_player(
         self,
