@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  team-service:
+    container_name: ${IMAGE_NAME}
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - APP_PORT=${APP_PORT}
+        - APP_HOST=${APP_HOST}
+        - APP_MODULE=${APP_MODULE}
+        - DEBUG_PORT=${DEBUG_PORT}
+    volumes:
+      - ../app:/workspace/app
+      - ../.devcontainer:/workspace/.devcontainer
+      - ../.vscode:/workspace/.vscode
+    working_dir: /workspace/app/src
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+      - ${DEBUG_PORT}:${DEBUG_PORT}
+    env_file:
+      - .env
+    environment:
+      - APP_PORT=${APP_PORT}
+      - APP_HOST=${APP_HOST}
+      - APP_MODULE=${APP_MODULE}
+      - DEBUG_PORT=${DEBUG_PORT}
+    depends_on:
+      - team-db
+    networks:
+      - zuidui
+
+  team-db:
+    container_name: ${DB_CONTAINER_NAME}
+    image: ${DB_IMAGE_NAME}:${DB_IMAGE_VERSION}
+    ports:
+      - ${DB_HOST_PORT}:${DB_PORT}
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    networks:
+      - zuidui
+
+networks:
+  zuidui:
+    driver: bridge
