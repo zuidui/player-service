@@ -53,8 +53,8 @@ class Publisher:
 
 async def start_publisher(loop):
     connection = await connect_robust(
-        host=settings.BROKER_HOST, 
-        port=settings.BROKER_PORT, 
+        host=settings.BROKER_HOST,
+        port=settings.BROKER_PORT,
         loop=loop,
         heartbeat=settings.BROKER_HEARTBEAT,
         connection_attempts=settings.BROKER_CONNECTION_ATTEMPTS,

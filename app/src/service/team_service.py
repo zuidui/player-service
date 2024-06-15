@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from model.team_model import Team
 from model.player_model import Player
 
-from resolver.team_schema import TeamCreateType, TeamCreateInput
+from resolver.team_schema import TeamCreateType, TeamCreateInput, TeamDataInput, TeamDataType
 from resolver.player_schema import PlayerCreateType, PlayerCreateInput
 
 from repository.team_repository import TeamRepository
@@ -56,7 +56,7 @@ class TeamService:
             mutation {{
                 team_created(new_team: {{ 
                     team_name: "{team_name}"
-                    team_id: {team_id}
+                    team_id: "{team_id}"
                 }}) {{
                     team_id
                     team_name
@@ -80,6 +80,24 @@ class TeamService:
             }}
             """
             payload = {"query": mutation}
+        elif event_type == "join_team":
+            team_name = data["team_name"]
+            team_id = data["team_id"]
+            mutation = f"""
+            mutation {{
+                team_joined(team_data: {{ 
+                    team_name: "{team_name}"
+                    team_id: {team_id}
+                }}) {{
+                    team_id
+                    team_name
+                }}
+            }}
+            """
+            payload = {"query": mutation}
+        else:
+            log.info(f"Event type {event_type} consumed but not handled.")
+            return data
         log.debug(f"Sending GraphQL mutation: {payload['query']}")
         return await TeamService.send_to_api_gateway(payload)
 
@@ -92,6 +110,16 @@ class TeamService:
         return await PlayerRepository.player_exists_by_name_in_team(
             player_name, team_id
         )
+    
+    @staticmethod
+    async def authenticate_team(team_data: TeamDataInput) -> Optional[TeamDataType]:
+        team = await TeamRepository.get_by_name(team_data.team_name)
+        if team and team.team_password == team_data.team_password:
+            return TeamDataType(
+                team_id=team.team_id,
+                team_name=team.team_name,
+            )
+        raise ValueError("Invalid team name or password")
 
     @staticmethod
     async def create_team(
@@ -164,4 +192,22 @@ class TeamService:
             return player_created
         except Exception as e:
             log.error(f"Error creating player: {e}")
+            raise e
+        
+    @staticmethod
+    async def join_team(
+        team_data: TeamDataInput,
+        publisher: Publisher
+    ) -> Optional[TeamDataType]:
+        log.info(f"Joining team: {team_data}")
+        try:
+            team = await TeamService.authenticate_team(team_data)
+            await publish_event(
+                publisher,
+                "join_team",
+                {"team_id": team.team_id, "team_name": team.team_name},
+            )
+            return team
+        except Exception as e:
+            log.error(f"Error joining team: {e} - Team does not exist or invalid password")
             raise e

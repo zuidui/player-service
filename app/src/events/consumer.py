@@ -12,8 +12,6 @@ from utils.config import get_settings
 log = logger_config(__name__)
 settings = get_settings()
 
-consumer_instance = None
-
 
 class Consumer:
     def __init__(
@@ -33,6 +31,8 @@ class Consumer:
     async def consume(self):
         while True:
             try:
+                if not self.queue:
+                    await self.connect()
                 await self.queue.consume(self._callback, no_ack=False)
                 log.info(f"Starting to consume messages from {self.queue_name}")
                 break
@@ -60,8 +60,8 @@ class Consumer:
 
 async def start_consumer(loop) -> Consumer:
     connection = await connect_robust(
-        host=settings.BROKER_HOST, 
-        port=settings.BROKER_PORT, 
+        host=settings.BROKER_HOST,
+        port=settings.BROKER_PORT,
         loop=loop,
         heartbeat=settings.BROKER_HEARTBEAT,
         connection_attempts=settings.BROKER_CONNECTION_ATTEMPTS,
