@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import httpx
 
 from datetime import datetime, timezone
@@ -6,8 +6,11 @@ from datetime import datetime, timezone
 from model.team_model import Team
 from model.player_model import Player
 
-from resolver.team_schema import TeamCreateType, TeamCreateInput, TeamDataInput, TeamDataType
-from resolver.player_schema import PlayerCreateType, PlayerCreateInput
+from resolver.team_schema import (
+    TeamDataInput,
+    TeamDataType,
+)
+from resolver.player_schema import PlayerDataInput, PlayerDataType
 
 from repository.team_repository import TeamRepository
 from repository.player_repository import PlayerRepository
@@ -56,26 +59,10 @@ class TeamService:
             mutation {{
                 team_created(new_team: {{ 
                     team_name: "{team_name}"
-                    team_id: "{team_id}"
+                    team_id: {team_id}
                 }}) {{
                     team_id
                     team_name
-                }}
-            }}
-            """
-            payload = {"query": mutation}
-        elif event_type == "create_player":
-            player_name = data["player_name"]
-            player_team_id = data["player_team_id"]
-            mutation = f"""
-            mutation {{
-                player_created(new_player: {{ 
-                    player_name: "{player_name}"
-                    player_team_id: {player_team_id}
-                }}) {{
-                    player_name
-                    player_team_name
-                    player_team_id
                 }}
             }}
             """
@@ -110,21 +97,21 @@ class TeamService:
         return await PlayerRepository.player_exists_by_name_in_team(
             player_name, team_id
         )
-    
+
     @staticmethod
     async def authenticate_team(team_data: TeamDataInput) -> Optional[TeamDataType]:
         team = await TeamRepository.get_by_name(team_data.team_name)
         if team and team.team_password == team_data.team_password:
             return TeamDataType(
-                team_id=team.team_id,
-                team_name=team.team_name,
+                team_id=team["team_id"],
+                team_name=team["team_name"],
             )
         raise ValueError("Invalid team name or password")
 
     @staticmethod
     async def create_team(
-        team_data: TeamCreateInput, publisher: Publisher
-    ) -> TeamCreateType:
+        team_data: TeamDataInput, publisher: Publisher
+    ) -> TeamDataType:
         log.info(f"Creating team: {team_data}")
 
         if await TeamService.team_exists_by_name(team_data.team_name):
@@ -138,7 +125,7 @@ class TeamService:
 
         try:
             team = (await TeamRepository.create(new_team)).to_dict()
-            team_created = TeamCreateType(
+            team_created = TeamDataType(
                 team_id=team["team_id"],
                 team_name=team["team_name"],
             )
@@ -155,28 +142,28 @@ class TeamService:
 
     @staticmethod
     async def create_player(
-        player_data: PlayerCreateInput, publisher: Publisher
-    ) -> Optional[PlayerCreateType]:
+        player_data: PlayerDataInput, publisher: Publisher
+    ) -> Optional[PlayerDataType]:
         log.info(f"Creating player: {player_data}")
 
         if await TeamService.player_exists_by_name_in_team(
-            player_data.player_name, player_data.player_team_id
+            player_data.player_name, player_data.team_id
         ):
             raise ValueError(
-                f"Player with name {player_data.player_name} already exists in team {player_data.player_team_id}"
+                f"Player with name {player_data.player_name} already exists in team {player_data.team_id}"
             )
 
         new_player = Player(
             player_name=player_data.player_name,
-            team_id=player_data.player_team_id,
+            team_id=player_data.team_id,
             created_at=datetime.now(timezone.utc),
         )
 
         try:
             player = (await PlayerRepository.create(new_player)).to_dict()
-            player_created = PlayerCreateType(
+            player_created = PlayerDataType(
                 player_id=player["player_id"],
-                player_team_id=player["team_id"],
+                team_id=player["team_id"],
                 player_name=player["player_name"],
             )
 
@@ -185,23 +172,24 @@ class TeamService:
                 "create_player",
                 {
                     "player_id": player_created.player_id,
-                    "player_team_id": player_created.player_team_id,
                     "player_name": player_created.player_name,
+                    "team_id": player_created.team_id,
                 },
             )
             return player_created
         except Exception as e:
             log.error(f"Error creating player: {e}")
             raise e
-        
+
     @staticmethod
     async def join_team(
-        team_data: TeamDataInput,
-        publisher: Publisher
+        team_data: TeamDataInput, publisher: Publisher
     ) -> Optional[TeamDataType]:
         log.info(f"Joining team: {team_data}")
         try:
             team = await TeamService.authenticate_team(team_data)
+            if not team:
+                raise ValueError("Invalid team name or password")
             await publish_event(
                 publisher,
                 "join_team",
@@ -209,5 +197,20 @@ class TeamService:
             )
             return team
         except Exception as e:
-            log.error(f"Error joining team: {e} - Team does not exist or invalid password")
+            log.error(
+                f"Error joining team: {e} - Team does not exist or invalid password"
+            )
             raise e
+
+    @staticmethod
+    async def get_players(team_id: int) -> List[PlayerDataType]:
+        log.info(f"Getting players for team {team_id}")
+        players = await PlayerRepository.get_players(team_id)
+        return [
+            PlayerDataType(
+                team_id=player.to_dict().team_id,
+                player_id=player.to_dict().player_id,
+                player_name=player.to_dict().player_name,
+            )
+            for player in players
+        ]

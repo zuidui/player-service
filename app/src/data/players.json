@@ -1,0 +1,102 @@
+[
+    {
+        "team_id": 1,
+        "player_name": "Krystal Austin",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 1,
+        "player_name": "Fernando Reed",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 1,
+        "player_name": "Nicholas Sanchez",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 1,
+        "player_name": "Robert Nichols",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 1,
+        "player_name": "Stacey Campbell",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 2,
+        "player_name": "Stephanie Huerta",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 2,
+        "player_name": "Leah Burns",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 2,
+        "player_name": "Haley Lopez",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 2,
+        "player_name": "Natalie Martinez",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 2,
+        "player_name": "Kevin Allen",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 3,
+        "player_name": "Christopher Boyd",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 3,
+        "player_name": "Peter Garcia",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 3,
+        "player_name": "Michael Wilkinson",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 3,
+        "player_name": "Lisa Ray",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 3,
+        "player_name": "Brianna Reed",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 4,
+        "player_name": "Samantha Lewis",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 4,
+        "player_name": "Debra Simon",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 4,
+        "player_name": "Faith Williams",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 4,
+        "player_name": "Kaitlin Sanders",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_id": 4,
+        "player_name": "Cynthia Peters",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    }
+]

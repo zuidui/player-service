@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy.future import select as sql_select
 from model.player_model import Player
 from data.session import db
@@ -38,3 +38,11 @@ class PlayerRepository:
             result = await session.execute(stmt)
             player = result.scalars().first()
             return player is not None
+
+    @staticmethod
+    async def get_players(team_id: int) -> List[Player]:
+        async with db.get_db() as session:
+            stmt = sql_select(Player).where(Player.team_id == team_id)
+            result = await session.execute(stmt)
+            players = result.scalars().all()
+            return List(players)

@@ -8,7 +8,7 @@ from data.session import Base
 class Player(Base):
     __tablename__ = "players"
 
-    player_id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, primary_key=True, autoincrement=True)
     team_id = Column(Integer, ForeignKey("teams.team_id"))
     player_name = Column(String, index=True)
     created_at = Column(
