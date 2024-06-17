@@ -1,3 +1,4 @@
+from typing import List
 import strawberry
 
 
@@ -10,11 +11,18 @@ class PlayerDataType:
 
 @strawberry.input
 class PlayerDataInput:
-    team_id: int = strawberry.field(name="team_id")
+    team_name: str = strawberry.field(name="team_name")
     player_name: str = strawberry.field(name="player_name")
 
 
 @strawberry.type
 class PlayerDataOutput:
-    team_id: int = strawberry.field(name="team_id")
+    player_id: int = strawberry.field(name="player_id")
     player_name: str = strawberry.field(name="player_name")
+
+
+@strawberry.type
+class PlayerDataListType:
+    team_id: int = strawberry.field(name="team_id")
+    team_name: str = strawberry.field(name="team_name")
+    players_data: List[PlayerDataOutput] = strawberry.field(name="players_data")
