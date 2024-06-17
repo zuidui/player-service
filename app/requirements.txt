@@ -17,3 +17,4 @@ strawberry-graphql[fastapi]
 pytest-asyncio
 sqlalchemy
 aio-pika
+faker

@@ -6,8 +6,16 @@ from datetime import datetime, timezone
 from model.team_model import Team
 from model.player_model import Player
 
-from resolver.team_schema import TeamCreateType, TeamCreateInput
-from resolver.player_schema import PlayerCreateType, PlayerCreateInput
+from resolver.team_schema import (
+    TeamDataInput,
+    TeamDataType,
+)
+from resolver.player_schema import (
+    PlayerDataInput,
+    PlayerDataOutput,
+    PlayerDataType,
+    PlayerDataListType,
+)
 
 from repository.team_repository import TeamRepository
 from repository.player_repository import PlayerRepository
@@ -46,44 +54,6 @@ class TeamService:
         return None
 
     @staticmethod
-    async def handle_message(message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        event_type = message["event_type"]
-        data = message["data"]
-        if event_type == "create_team":
-            team_name = data["team_name"]
-            team_id = data["team_id"]
-            mutation = f"""
-            mutation {{
-                team_created(new_team: {{ 
-                    team_name: "{team_name}"
-                    team_id: {team_id}
-                }}) {{
-                    team_id
-                    team_name
-                }}
-            }}
-            """
-            payload = {"query": mutation}
-        elif event_type == "create_player":
-            player_name = data["player_name"]
-            player_team_id = data["player_team_id"]
-            mutation = f"""
-            mutation {{
-                player_created(new_player: {{ 
-                    player_name: "{player_name}"
-                    player_team_id: {player_team_id}
-                }}) {{
-                    player_name
-                    player_team_name
-                    player_team_id
-                }}
-            }}
-            """
-            payload = {"query": mutation}
-        log.debug(f"Sending GraphQL mutation: {payload['query']}")
-        return await TeamService.send_to_api_gateway(payload)
-
-    @staticmethod
     async def team_exists_by_name(team_name: str) -> bool:
         return await TeamRepository.team_exists_by_name(team_name)
 
@@ -94,9 +64,22 @@ class TeamService:
         )
 
     @staticmethod
+    async def authenticate_team(team_data: TeamDataInput) -> Optional[TeamDataType]:
+        team = await TeamRepository.get_by_name(team_data.team_name)
+        if not team:
+            raise ValueError("Team does not exist")
+        team_dict = team.to_dict()
+        if team_dict["team_password"] != team_data.team_password:
+            raise ValueError("Invalid password")
+        return TeamDataType(
+            team_id=team_dict["team_id"],
+            team_name=team_dict["team_name"],
+        )
+
+    @staticmethod
     async def create_team(
-        team_data: TeamCreateInput, publisher: Publisher
-    ) -> TeamCreateType:
+        team_data: TeamDataInput, publisher: Publisher
+    ) -> TeamDataType:
         log.info(f"Creating team: {team_data}")
 
         if await TeamService.team_exists_by_name(team_data.team_name):
@@ -110,14 +93,14 @@ class TeamService:
 
         try:
             team = (await TeamRepository.create(new_team)).to_dict()
-            team_created = TeamCreateType(
+            team_created = TeamDataType(
                 team_id=team["team_id"],
                 team_name=team["team_name"],
             )
 
             await publish_event(
                 publisher,
-                "create_team",
+                "team_created",
                 {"team_id": team_created.team_id, "team_name": team_created.team_name},
             )
             return team_created
@@ -127,41 +110,94 @@ class TeamService:
 
     @staticmethod
     async def create_player(
-        player_data: PlayerCreateInput, publisher: Publisher
-    ) -> Optional[PlayerCreateType]:
+        player_data: PlayerDataInput, publisher: Publisher
+    ) -> Optional[PlayerDataType]:
         log.info(f"Creating player: {player_data}")
 
+        team = await TeamRepository.get_by_name(player_data.team_name)
+
+        if not team:
+            raise ValueError(f"Team with name {player_data.team_name} does not exist")
+
+        team_dict = team.to_dict()
+        team_id = team_dict["team_id"]
         if await TeamService.player_exists_by_name_in_team(
-            player_data.player_name, player_data.player_team_id
+            player_data.player_name, team_id
         ):
             raise ValueError(
-                f"Player with name {player_data.player_name} already exists in team {player_data.player_team_id}"
+                f"Player with name {player_data.player_name} already exists in team {player_data.team_name}"
             )
 
         new_player = Player(
             player_name=player_data.player_name,
-            team_id=player_data.player_team_id,
+            team_id=team_id,
             created_at=datetime.now(timezone.utc),
         )
 
         try:
             player = (await PlayerRepository.create(new_player)).to_dict()
-            player_created = PlayerCreateType(
+            player_created = PlayerDataType(
                 player_id=player["player_id"],
-                player_team_id=player["team_id"],
+                team_id=player["team_id"],
                 player_name=player["player_name"],
             )
 
             await publish_event(
                 publisher,
-                "create_player",
+                "player_created",
                 {
                     "player_id": player_created.player_id,
-                    "player_team_id": player_created.player_team_id,
                     "player_name": player_created.player_name,
+                    "team_id": player_created.team_id,
                 },
             )
             return player_created
         except Exception as e:
             log.error(f"Error creating player: {e}")
             raise e
+
+    @staticmethod
+    async def join_team(
+        team_data: TeamDataInput, publisher: Publisher
+    ) -> Optional[TeamDataType]:
+        log.info(f"Joining team: {team_data}")
+        try:
+            team = await TeamService.authenticate_team(team_data)
+            if not team:
+                raise ValueError("Invalid team name or password")
+            await publish_event(
+                publisher,
+                "team_joined",
+                {"team_id": team.team_id, "team_name": team.team_name},
+            )
+            return team
+        except Exception as e:
+            log.error(
+                f"Error joining team: {e} - Team does not exist or invalid password"
+            )
+            raise e
+
+    @staticmethod
+    async def get_players(team_name: str) -> Optional[PlayerDataListType]:
+        log.info(f"Getting players for team {team_name}")
+        team = await TeamRepository.get_by_name(team_name)
+        if not team:
+            raise ValueError(f"Team with name {team_name} does not exist")
+        team_dict = team.to_dict()
+        team_id = team_dict["team_id"]
+        players = await PlayerRepository.get_players(team_id)
+        players_dict = [player.to_dict() for player in players]
+        if players:
+            players_data_output = [
+                PlayerDataOutput(
+                    player_id=player["player_id"],
+                    player_name=player["player_name"],
+                )
+                for player in players_dict
+            ]
+            return PlayerDataListType(
+                team_id=team_id,
+                team_name=team_name,
+                players_data=players_data_output,
+            )
+        raise ValueError(f"No players found for team {team_name}")
