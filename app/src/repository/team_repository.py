@@ -30,6 +30,17 @@ class TeamRepository:
         return team
 
     @staticmethod
+    async def get_by_id(team_id: int) -> Optional[Team]:
+        async with db.get_db() as session:
+            stmt = sql_select(Team).where(Team.team_id == team_id)
+            result = await session.execute(stmt)
+            team = result.scalars().first()
+            if team:
+                await session.refresh(team)
+                log.info(f"Team found in repository: {team.to_dict()}")
+        return team
+
+    @staticmethod
     async def team_exists_by_name(team_name: str) -> bool:
         async with db.get_db() as session:
             stmt = sql_select(Team).where(Team.team_name == team_name)

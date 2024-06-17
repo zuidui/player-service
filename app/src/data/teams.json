@@ -1,0 +1,22 @@
+[
+    {
+        "team_name": "Team1",
+        "team_password": "team1pass",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_name": "Team2",
+        "team_password": "team2pass",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_name": "Team3",
+        "team_password": "team3pass",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    },
+    {
+        "team_name": "Team4",
+        "team_password": "team4pass",
+        "created_at": "2024-06-16T12:12:47.495878+00:00"
+    }
+]

@@ -2,8 +2,11 @@ import strawberry
 from strawberry.types import Info
 from typing import Annotated, Optional
 
-from resolver.team_schema import TeamCreateType, TeamCreateInput
-from resolver.player_schema import PlayerCreateInput, PlayerCreateType
+from resolver.team_schema import (
+    TeamDataInput,
+    TeamDataType,
+)
+from resolver.player_schema import PlayerDataInput, PlayerDataType
 
 from service.team_service import TeamService
 
@@ -18,8 +21,8 @@ class Mutation:
     async def create_team(
         self,
         info: Info,
-        new_team: Annotated[TeamCreateInput, strawberry.argument(name="new_team")],
-    ) -> Optional[TeamCreateType]:
+        new_team: Annotated[TeamDataInput, strawberry.argument(name="new_team")],
+    ) -> Optional[TeamDataType]:
         publisher = info.context["publisher"]
         log.info(f"Creating team with data: {new_team}")
         return await TeamService.create_team(new_team, publisher)
@@ -28,10 +31,18 @@ class Mutation:
     async def create_player(
         self,
         info: Info,
-        new_player: Annotated[
-            PlayerCreateInput, strawberry.argument(name="new_player")
-        ],
-    ) -> Optional[PlayerCreateType]:
+        new_player: Annotated[PlayerDataInput, strawberry.argument(name="new_player")],
+    ) -> Optional[PlayerDataType]:
         publisher = info.context["publisher"]
         log.info(f"Creating player with data: {new_player}")
         return await TeamService.create_player(new_player, publisher)
+
+    @strawberry.mutation(name="join_team")
+    async def join_team(
+        self,
+        info: Info,
+        team_data: Annotated[TeamDataInput, strawberry.argument(name="team_data")],
+    ) -> Optional[TeamDataType]:
+        publisher = info.context["publisher"]
+        log.info(f"Joining team with data: {team_data}")
+        return await TeamService.join_team(team_data, publisher)

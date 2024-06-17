@@ -38,3 +38,11 @@ class PlayerRepository:
             result = await session.execute(stmt)
             player = result.scalars().first()
             return player is not None
+
+    @staticmethod
+    async def get_players(team_id: int) -> list[Player]:
+        async with db.get_db() as session:
+            stmt = sql_select(Player).where(Player.team_id == team_id)
+            result = await session.execute(stmt)
+            players = result.scalars().all()
+            return list(players)
