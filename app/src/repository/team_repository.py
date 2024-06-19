@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy.future import select as sql_select
-from model.team_model import Team
+from models.team_model import Team
 from data.session import db
 from utils.logger import logger_config
 

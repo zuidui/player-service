@@ -3,8 +3,8 @@ import httpx
 
 from datetime import datetime, timezone
 
-from model.team_model import Team
-from model.player_model import Player
+from models.team_model import Team
+from models.player_model import Player
 
 from resolver.team_schema import (
     TeamDataInput,
