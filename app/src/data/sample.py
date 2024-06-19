@@ -4,8 +4,8 @@ import os
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from faker import Faker
-from model.team_model import Team
-from model.player_model import Player
+from models.team_model import Team
+from models.player_model import Player
 from utils.logger import logger_config
 
 log = logger_config(__name__)
